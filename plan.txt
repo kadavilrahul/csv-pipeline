@@ -1,0 +1,63 @@
+## 50-LINE PLAN TO CLEAN ALIBABA CSV FOR HTML PRODUCT PAGES
+
+**ANALYSIS (Lines 1-8)**
+1. CSV has 30 columns with inconsistent data (many empty fields, duplicates)
+2. Header row has specific field names for target data extraction
+3. Target fields: product link (col 1), image src (col 2), price (col 6), title (col 4)
+4. Data quality issues: missing values, inconsistent formatting, word "Camera" scattered
+5. Some titles split across multiple columns (col 4, 29, 30)
+6. Prices include ranges ($0.20-19.80) and single values ($0.20)
+7. MOQ (minimum order quantity) data in column 7 needs parsing
+8. Total rows unknown - need to check file size and structure
+
+**STRATEGY (Lines 9-16)**
+9. Python script with pandas/csv library for robust CSV handling
+10. Extract only 4 essential columns for HTML generation
+11. Validate URLs start with https://www.alibaba.com
+12. Validate image URLs start with https://s.alicdn.com
+13. Clean price strings (remove $, handle ranges, keep numeric values)
+14. Merge title columns (4, 29, 30) to get complete product names
+15. Remove duplicate products based on URL
+16. Handle missing/empty values with default placeholders
+
+**CLEANING RULES (Lines 17-28)**
+17. Product URL: Extract column 1, validate format, remove quotes
+18. Image URL: Extract column 2, validate format, ensure .jpg/.png extension
+19. Price: Extract column 6, strip "$", handle ranges (take min price)
+20. Title: Combine columns 4, 29, 30; remove extra spaces/quotes
+21. Remove rows where any of 4 required fields are empty
+22. Strip "Camera" and "Parts" words that appear alone in title fields
+23. Decode HTML entities if present in titles
+24. Normalize whitespace in all text fields
+25. Convert prices to float for validation, keep as string for display
+26. Remove rows with invalid URLs (not matching domain patterns)
+27. Trim titles to reasonable length (e.g., 200 chars max)
+28. Handle special characters in titles (quotes, commas, newlines)
+
+**OUTPUT STRUCTURE (Lines 29-36)**
+29. Create clean CSV with 4 columns: product_url, image_url, price, title
+30. Add header row with descriptive column names
+31. Sort by price (lowest to highest) for better organization
+32. UTF-8 encoding to handle special characters
+33. Use comma delimiter with proper quote escaping
+34. Output filename: alibaba_cleaned.csv
+35. Generate summary stats: total rows, cleaned rows, removed rows
+36. Create validation report listing issues found
+
+**HTML GENERATION PREP (Lines 37-44)**
+37. Structure suitable for template-based HTML generation
+38. Each row = one product card/page
+39. Price format: "$X.XX" or "$X.XX-$Y.YY" for ranges
+40. Image URLs ready for <img src="..."> tags
+41. Product URLs ready for <a href="..."> tags
+42. Titles ready for display (sanitized for HTML)
+43. Consider adding alt text column using title
+44. Consider extracting MOQ data for additional info
+
+**SCRIPT IMPLEMENTATION (Lines 45-50)**
+45. Main function: read CSV, apply cleaning pipeline, write output
+46. Add logging for each cleaning step (rows affected)
+47. Create backup of original file before processing
+48. Implement dry-run mode to preview changes
+49. Add command-line arguments for input/output paths
+50. Include error handling for malformed CSV rows
