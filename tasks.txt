@@ -1,0 +1,4 @@
+Make python script to do following:
+- Remove unwanted columns
+- Delete rows that have blank cells after deleting columns
+- Rename headers

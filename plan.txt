@@ -1,63 +1,68 @@
 ## 50-LINE PLAN TO CLEAN ALIBABA CSV FOR HTML PRODUCT PAGES
+## REVISED BASED ON sample_products.csv FINAL FORMAT
 
-**ANALYSIS (Lines 1-8)**
-1. CSV has 30 columns with inconsistent data (many empty fields, duplicates)
-2. Header row has specific field names for target data extraction
-3. Target fields: product link (col 1), image src (col 2), price (col 6), title (col 4)
-4. Data quality issues: missing values, inconsistent formatting, word "Camera" scattered
-5. Some titles split across multiple columns (col 4, 29, 30)
-6. Prices include ranges ($0.20-19.80) and single values ($0.20)
-7. MOQ (minimum order quantity) data in column 7 needs parsing
-8. Total rows unknown - need to check file size and structure
+**ANALYSIS: ALIBABA SOURCE CSV (Lines 1-8)**
+1. alibaba.csv has 30 columns with raw Alibaba scraped data
+2. Target fields from Alibaba: href (col 1), img src (col 2), price (col 6), title (col 4)
+3. Data quality issues: missing values, inconsistent formatting, scattered keywords
+4. Some titles split across columns 4, 29, 30 (need merging)
+5. Prices include ranges ($0.20-19.80) and single values ($0.20)
+6. Multiple image URLs available (col 2 - primary product image)
+7. MOQ data in column 7 could be extracted for stock/quantity info
+8. Need to transform to match sample_products.csv format (23 columns)
 
-**STRATEGY (Lines 9-16)**
-9. Python script with pandas/csv library for robust CSV handling
-10. Extract only 4 essential columns for HTML generation
-11. Validate URLs start with https://www.alibaba.com
-12. Validate image URLs start with https://s.alicdn.com
-13. Clean price strings (remove $, handle ranges, keep numeric values)
-14. Merge title columns (4, 29, 30) to get complete product names
-15. Remove duplicate products based on URL
-16. Handle missing/empty values with default placeholders
+**ANALYSIS: TARGET CSV FORMAT (Lines 9-16)**
+9. sample_products.csv has 23 columns - this is the target structure
+10. Required fields: product_id, post_title, slug, short_description, description
+11. Required fields: image_url (pipe-separated multi-images), price, sku, category
+12. Optional fields: product_type, tags, rating, review_count, last_updated
+13. Optional fields: faq_json, schema_json, stock_type, images, attributes
+14. Optional fields: variations, template, generate_id_html, enable_adsense
+15. Template field specifies: "product-simple.html" for single product type
+16. Prices are in paisa (multiply by 3 for INR conversion from USD estimate)
 
-**CLEANING RULES (Lines 17-28)**
-17. Product URL: Extract column 1, validate format, remove quotes
-18. Image URL: Extract column 2, validate format, ensure .jpg/.png extension
-19. Price: Extract column 6, strip "$", handle ranges (take min price)
-20. Title: Combine columns 4, 29, 30; remove extra spaces/quotes
-21. Remove rows where any of 4 required fields are empty
-22. Strip "Camera" and "Parts" words that appear alone in title fields
-23. Decode HTML entities if present in titles
-24. Normalize whitespace in all text fields
-25. Convert prices to float for validation, keep as string for display
-26. Remove rows with invalid URLs (not matching domain patterns)
-27. Trim titles to reasonable length (e.g., 200 chars max)
-28. Handle special characters in titles (quotes, commas, newlines)
+**EXTRACTION & MAPPING (Lines 17-24)**
+17. Alibaba href → Not directly mapped (external link, may use for reference)
+18. Alibaba title (col 4) → post_title (clean, capitalize properly)
+19. Alibaba title → slug (lowercase, hyphenated, URL-safe)
+20. Alibaba img src → image_url (primary image, check for multiple images)
+21. Alibaba price → price (convert to paisa: parse, estimate INR conversion)
+22. Generate product_id: Use random 7-digit number (1000000-9999999)
+23. Generate sku: Use 12-char hex hash from title or random
+24. Set category: "Anti-ageing" (or extract from title keywords if available)
 
-**OUTPUT STRUCTURE (Lines 29-36)**
-29. Create clean CSV with 4 columns: product_url, image_url, price, title
-30. Add header row with descriptive column names
-31. Sort by price (lowest to highest) for better organization
-32. UTF-8 encoding to handle special characters
-33. Use comma delimiter with proper quote escaping
-34. Output filename: alibaba_cleaned.csv
-35. Generate summary stats: total rows, cleaned rows, removed rows
-36. Create validation report listing issues found
+**DATA GENERATION RULES (Lines 25-32)**
+25. post_title: Clean title, remove "Camera", "Parts" if standalone, capitalize
+26. slug: Lowercase title, replace spaces with hyphens, remove special chars
+27. short_description: Template-based generic description (see sample_products)
+28. description: Longer template with "Why Choose", "Key Features", product name
+29. image_url: Primary from col 2, attempt to find additional images (pipe-separated)
+30. price: Parse Alibaba price, take minimum if range, multiply by 300 (estimated)
+31. sku: Generate unique 12-char hex string (hashlib or random)
+32. product_type: Set to "30days" (standard value from sample)
 
-**HTML GENERATION PREP (Lines 37-44)**
-37. Structure suitable for template-based HTML generation
-38. Each row = one product card/page
-39. Price format: "$X.XX" or "$X.XX-$Y.YY" for ranges
-40. Image URLs ready for <img src="..."> tags
-41. Product URLs ready for <a href="..."> tags
-42. Titles ready for display (sanitized for HTML)
-43. Consider adding alt text column using title
-44. Consider extracting MOQ data for additional info
+**DEFAULT VALUES & TEMPLATES (Lines 33-40)**
+33. stock_type: "30days" (standard inventory type)
+34. category: "Anti-ageing" (or "Electronics", "Accessories" based on keywords)
+35. tags: "30days" (standard tag from sample)
+36. template: "product-simple.html" (single product template)
+37. generate_id_html: "single" (indicates single product page generation)
+38. rating: Empty or 4.5 (optional, can add random 4.0-5.0)
+39. review_count: Empty or random 5-50 (optional)
+40. last_updated: Current date in DD/MM/YYYY format
 
-**SCRIPT IMPLEMENTATION (Lines 45-50)**
-45. Main function: read CSV, apply cleaning pipeline, write output
-46. Add logging for each cleaning step (rows affected)
-47. Create backup of original file before processing
-48. Implement dry-run mode to preview changes
-49. Add command-line arguments for input/output paths
-50. Include error handling for malformed CSV rows
+**DESCRIPTION TEMPLATES (Lines 41-44)**
+41. short_description: "Discover the best in [category]! High-quality, eco-friendly..."
+42. description: "Transform your skincare routine... Why Choose... Key Features..."
+43. Both descriptions should include the actual product_title at the end
+44. Keep description format consistent with sample_products.csv examples
+
+**OPTIONAL ADVANCED FIELDS (Lines 45-48)**
+45. faq_json: Generate 3 FAQs based on product type (JSON format, escaped)
+46. schema_json: Generate Product schema.org JSON-LD (truncated in CSV)
+47. images: Pipe-separated list of additional images (if available in Alibaba data)
+48. attributes/variations: Leave empty for simple products
+
+**SCRIPT IMPLEMENTATION (Lines 49-50)**
+49. Python script: Read alibaba.csv → Transform → Write sample_products format
+50. Include: validation, logging, error handling, duplicate detection, price conversion
