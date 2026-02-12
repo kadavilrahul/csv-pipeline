@@ -1,0 +1,22 @@
+{
+  "product_id_start": 1094110,
+  "generate_random_sku": true,
+  "category": "Camera Accessories",
+  "tags": "camera,alibaba,electronics",
+  "output_settings": {
+    "remove_blank_rows": true,
+    "encoding": "utf-8"
+  },
+  "column_mapping": {
+    "source_product_url": "searchx-product-e-slider__link href",
+    "source_image_url": "searchx-product-e-slider__img src",
+    "source_price": "searchx-product-price-price-main",
+    "source_title": "searchx-product-e-title"
+  },
+  "target_columns": {
+    "product_url": "product_url",
+    "image_url": "image_url",
+    "price": "price",
+    "title": "title"
+  }
+}

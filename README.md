@@ -33,8 +33,8 @@ Before you begin, make sure you have:
 This tool transforms messy Alibaba product CSV files into clean, organized data:
 
 1. **Removes Unwanted Columns** - Keeps only 4 essential fields (product URL, image URL, price, title)
-2. **Cleans Data** - Removes rows with missing information automatically
-3. **Renames Headers** - Simplifies column names for easier processing
+2. **Auto-Generates Fields** - Creates product_id, SKU, category, and tags using config.json
+3. **Cleans Data** - Removes rows with missing information automatically
 4. **Interactive Menu** - User-friendly interface to run cleaning, preview results, or view statistics
 
 ## How to Use
@@ -67,31 +67,36 @@ If you know exactly what you want to do:
 ## Input and Output Files
 
 1. **Input File**: `alibaba.csv` - Your raw Alibaba product data (30 columns)
-2. **Output File**: `alibaba_cleaned.csv` - Clean data with 4 columns (product_url, image_url, price, title)
-3. **Processing Plan**: `plan.txt` - Explains the data transformation strategy
+2. **Output File**: `alibaba_cleaned.csv` - Clean data with 8 columns (product_id, product_url, image_url, price, title, sku, category, tags)
+3. **Config File**: `config.json` - Controls product_id start, SKU generation, category, and tags
+4. **Processing Plan**: `plan.txt` - Explains the data transformation strategy
 
 ## Project Structure
 
 1. `clean_alibaba.py` - Python script that does the actual data cleaning
 2. `run.sh` - Bash script with interactive menu and direct command support
-3. `plan.txt` - 50-line plan explaining the CSV cleaning strategy
-4. `alibaba.csv` - Your source data file (you need to provide this)
-5. `sample_products.csv` - Example of final format for HTML generation (23 columns)
-6. `agent/` - Contains markdown files for various automation agents
+3. `config.json` - Configuration for product_id, SKU, category, and tags (auto-created)
+4. `plan.txt` - 50-line plan explaining the CSV cleaning strategy
+5. `alibaba.csv` - Your source data file (you need to provide this)
+6. `sample_products.csv` - Example of final format for HTML generation (23 columns)
+7. `agent/` - Contains markdown files for various automation agents
 
 ## The Cleaning Process
 
 When you run the cleaner, it does these steps:
 
-1. Reads your alibaba.csv file (30 columns with Alibaba scraped data)
-2. Extracts these 4 columns only:
+1. Reads config.json for settings (product_id start, category, tags, SKU generation)
+2. Reads your alibaba.csv file (30 columns with Alibaba scraped data)
+3. Extracts these 4 columns and generates 4 new ones:
    - searchx-product-e-slider__link href → product_url
    - searchx-product-e-slider__img src → image_url
    - searchx-product-price-price-main → price
    - searchx-product-e-title → title
-3. Removes any rows that have empty cells in these columns
-4. Saves the cleaned data to alibaba_cleaned.csv
-5. Shows you a summary with row counts and file sizes
+   - Auto-generates: product_id (sequential), sku (random hex), category, tags
+4. Removes any rows that have empty cells in the extracted columns
+5. Saves the cleaned data to alibaba_cleaned.csv (8 columns total)
+6. Updates config.json with next product_id to prevent duplicates
+7. Shows you a summary with row counts and configuration applied
 
 ## Troubleshooting
 
@@ -117,33 +122,27 @@ When you run the cleaner, it does these steps:
 5. **Problem**: Python not installed or wrong version
    **Solution**: Install Python 3.6+ from python.org, then try again
 
+## Configuration (config.json)
+
+Edit `config.json` to customize output. The script auto-creates this file on first run:
+
+1. **product_id_start** - Starting number for product IDs (auto-updates after each run)
+2. **generate_random_sku** - Set `true` for random hex SKUs, `false` for SKU+product_id format
+3. **category** - Category name applied to all products (e.g., "Camera Accessories")
+4. **tags** - Comma-separated tags (e.g., "camera,alibaba,electronics")
+
+Example: Change category before processing different product types.
+
 ## Understanding the Output
 
 After cleaning, you'll see:
 
 1. **Total rows** - How many products were in your original file
 2. **Kept rows** - Products with complete information (these are saved)
-3. **Deleted rows** - Products with missing data (these are removed)
-4. **File sizes** - Original file size vs cleaned file size
+3. **Product ID range** - Starting and ending product_id numbers
+4. **Configuration applied** - Category, tags, and SKU generation method used
 
-The cleaned CSV will be much smaller because it only keeps 4 columns instead of 30.
-
-## Next Steps
-
-After cleaning your CSV:
-
-1. The cleaned file (alibaba_cleaned.csv) can be used for HTML product page generation
-2. To convert to the full 23-column format (sample_products.csv), you'll need additional transformation
-3. Check plan.txt for details on converting to the final WordPress product format
-
-## Getting Help
-
-If you need assistance:
-
-1. Read the troubleshooting section above for common issues
-2. Check plan.txt for detailed information about the data transformation
-3. Review the error messages carefully - they tell you what's wrong
-4. Make sure your alibaba.csv file has the correct column headers
+The cleaned CSV has 8 columns: product_id, product_url, image_url, price, title, sku, category, tags.
 
 ## License
 

@@ -135,6 +135,100 @@ show_stats() {
     echo ""
 }
 
+# Function to get max product ID from products.csv
+get_max_product_id() {
+    display_header
+    
+    local PRODUCTS_CSV="/var/www/nilgiristores.in/csv-pipeline/products.csv"
+    
+    if [ ! -f "$PRODUCTS_CSV" ]; then
+        echo -e "${RED}[ERROR]${NC} File 'products.csv' not found!"
+        echo ""
+        echo "The products.csv file is required to find the highest product_id."
+        echo ""
+        echo "Please follow these steps:"
+        echo ""
+        echo "1. Locate your products.csv file (it should contain existing products)"
+        echo "2. Copy it to this directory:"
+        echo "   ${YELLOW}cp /path/to/your/products.csv $PRODUCTS_CSV${NC}"
+        echo ""
+        echo "3. Run this command again"
+        echo ""
+        echo -n "Do you want to specify a custom path to products.csv? (y/n): "
+        read -r USE_CUSTOM
+        
+        if [ "$USE_CUSTOM" = "y" ] || [ "$USE_CUSTOM" = "Y" ]; then
+            echo -n "Enter full path to products.csv: "
+            read -r CUSTOM_PATH
+            
+            if [ -f "$CUSTOM_PATH" ]; then
+                echo ""
+                echo -e "${YELLOW}[INFO]${NC} Copying $CUSTOM_PATH to $PRODUCTS_CSV..."
+                cp "$CUSTOM_PATH" "$PRODUCTS_CSV"
+                
+                if [ $? -eq 0 ]; then
+                    echo -e "${GREEN}[SUCCESS]${NC} File copied successfully!"
+                    echo ""
+                else
+                    echo -e "${RED}[ERROR]${NC} Failed to copy file!"
+                    return 1
+                fi
+            else
+                echo -e "${RED}[ERROR]${NC} File '$CUSTOM_PATH' not found!"
+                return 1
+            fi
+        else
+            return 1
+        fi
+    fi
+    
+    echo "Analyzing: $PRODUCTS_CSV"
+    echo ""
+    
+    # Get the highest product_id
+    local MAX_ID=$(tail -n +2 "$PRODUCTS_CSV" | cut -d',' -f1 | sort -n | tail -1)
+    
+    if [ -z "$MAX_ID" ]; then
+        echo -e "${RED}[ERROR]${NC} Could not find product_id values!"
+        return 1
+    fi
+    
+    # Count total rows
+    local TOTAL_ROWS=$(tail -n +2 "$PRODUCTS_CSV" | wc -l)
+    local NEXT_ID=$((MAX_ID + 1))
+    
+    echo "========================================"
+    echo "RESULTS"
+    echo "========================================"
+    echo "Total products:      $TOTAL_ROWS"
+    echo "Highest product_id:  $MAX_ID"
+    echo "Next available ID:   $NEXT_ID"
+    echo "========================================"
+    echo ""
+    
+    # Update config.json
+    if [ -f "config.json" ]; then
+        echo -e "${YELLOW}[INFO]${NC} Updating config.json with next ID: $NEXT_ID"
+        
+        python3 -c "
+import json
+with open('config.json', 'r') as f:
+    config = json.load(f)
+old = config.get('product_id_start', 0)
+config['product_id_start'] = $NEXT_ID
+with open('config.json', 'w') as f:
+    json.dump(config, f, indent=2)
+print(f'✓ Updated: {old} → $NEXT_ID')
+"
+        echo ""
+        echo -e "${GREEN}[SUCCESS]${NC} Config updated! Next cleaning will start at ID $NEXT_ID"
+    else
+        echo -e "${YELLOW}[WARNING]${NC} config.json not found. Create it to enable auto-update."
+    fi
+    
+    echo ""
+}
+
 # Function to show menu
 show_menu() {
     echo "========================================"
@@ -144,12 +238,13 @@ show_menu() {
     echo "1. Clean CSV (Run Python script)"
     echo "2. Preview cleaned output"
     echo "3. Show statistics"
-    echo "4. Help"
+    echo "4. Get max product_id from products.csv"
+    echo "5. Help"
     echo "0. Exit"
     echo ""
     echo "========================================"
     echo ""
-    echo -n "Enter your choice [0-4]: "
+    echo -n "Enter your choice [0-5]: "
 }
 
 # Function to show usage
@@ -165,6 +260,7 @@ show_usage() {
     echo "  ./run.sh clean       # Run cleaning process"
     echo "  ./run.sh preview     # Preview cleaned output"
     echo "  ./run.sh stats       # Show statistics"
+    echo "  ./run.sh maxid       # Get max product_id and update config"
     echo "  ./run.sh help        # Show this help message"
     echo ""
     echo "EXAMPLES:"
@@ -205,7 +301,12 @@ interactive_menu() {
                 echo ""
                 read -p "Press Enter to continue..."
                 ;;
-            4|help)
+            4|maxid)
+                get_max_product_id
+                echo ""
+                read -p "Press Enter to continue..."
+                ;;
+            5|help)
                 display_header
                 show_usage
                 echo ""
@@ -217,7 +318,7 @@ interactive_menu() {
                 exit 0
                 ;;
             *)
-                echo -e "${RED}[ERROR]${NC} Invalid choice! Please select 0-4."
+                echo -e "${RED}[ERROR]${NC} Invalid choice! Please select 0-5."
                 sleep 2
                 ;;
         esac
@@ -240,6 +341,9 @@ main() {
             ;;
         stats|statistics)
             show_stats
+            ;;
+        maxid|getmax|max)
+            get_max_product_id
             ;;
         help|--help|-h)
             show_usage
