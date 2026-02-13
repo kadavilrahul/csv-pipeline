@@ -1,22 +1,63 @@
 {
-  "product_id_start": 1094110,
-  "generate_random_sku": true,
-  "category": "Camera Accessories",
-  "tags": "camera,alibaba,electronics",
-  "output_settings": {
+  "files": {
+    "input_file": "input/alibaba.csv",
+    "output_file": "output/cleaned.csv"
+  },
+  "columns": {
+    "source_mapping": {
+      "product_url": "searchx-product-e-slider__link href",
+      "image_url": "searchx-product-e-slider__img src",
+      "price": "searchx-product-price-price-main",
+      "title": "searchx-product-e-title"
+    }
+  },
+  "generated_columns": {
+    "product_id": {
+      "type": "sequential",
+      "start": 1094110,
+      "description": "Auto-incrementing number starting from 'start' value"
+    },
+    "sku": {
+      "type": "random_hex",
+      "length": 12,
+      "description": "Random hexadecimal code. Types: 'random_hex', 'sequential', 'uuid'"
+    },
+    "category": {
+      "type": "static",
+      "value": "Camera Accessories",
+      "description": "Same value for all rows"
+    },
+    "tags": {
+      "type": "static",
+      "value": "camera,alibaba,electronics",
+      "description": "Comma-separated tags applied to all rows"
+    }
+  },
+  "formulas": {},
+  "filters": {
     "remove_blank_rows": true,
-    "encoding": "utf-8"
+    "remove_duplicates": false,
+    "duplicate_check_column": "product_url",
+    "min_columns_required": 4
   },
-  "column_mapping": {
-    "source_product_url": "searchx-product-e-slider__link href",
-    "source_image_url": "searchx-product-e-slider__img src",
-    "source_price": "searchx-product-price-price-main",
-    "source_title": "searchx-product-e-title"
+  "output_settings": {
+    "encoding": "utf-8",
+    "include_header": true,
+    "column_order": [
+      "product_id",
+      "product_url",
+      "image_url",
+      "price",
+      "title",
+      "sku",
+      "category",
+      "tags"
+    ]
   },
-  "target_columns": {
-    "product_url": "product_url",
-    "image_url": "image_url",
-    "price": "price",
-    "title": "title"
+  "processing": {
+    "auto_update_config": true,
+    "update_product_id_start": true,
+    "create_backup": false,
+    "verbose_logging": true
   }
 }

@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# Alibaba CSV Pipeline Runner
-# Runs the Python cleaning script to transform alibaba.csv
+# Generic CSV Pipeline Runner
+# Runs the Python script to process any CSV file
+# File paths are configured in config.json
 
 # Configuration
-INPUT_FILE="alibaba.csv"
-OUTPUT_FILE="alibaba_cleaned.csv"
-PYTHON_SCRIPT="clean_alibaba.py"
+PYTHON_SCRIPT="process_csv.py"
+CONFIG_FILE="config.json"
 
 # Colors for output
 GREEN='\033[0;32m'
@@ -18,7 +18,7 @@ NC='\033[0m' # No Color
 display_header() {
     clear
     echo "========================================"
-    echo "   ALIBABA CSV CLEANING PIPELINE       "
+    echo "     GENERIC CSV PIPELINE              "
     echo "========================================"
     echo ""
 }
@@ -33,6 +33,24 @@ check_file() {
     return 0
 }
 
+# Function to get file paths from config
+get_file_paths() {
+    if [ ! -f "$CONFIG_FILE" ]; then
+        echo -e "${RED}[ERROR]${NC} Config file '$CONFIG_FILE' not found!"
+        return 1
+    fi
+    
+    INPUT_FILE=$(python3 -c "import json; print(json.load(open('$CONFIG_FILE'))['files']['input_file'])" 2>/dev/null)
+    OUTPUT_FILE=$(python3 -c "import json; print(json.load(open('$CONFIG_FILE'))['files']['output_file'])" 2>/dev/null)
+    
+    if [ -z "$INPUT_FILE" ] || [ -z "$OUTPUT_FILE" ]; then
+        echo -e "${RED}[ERROR]${NC} Could not read file paths from config.json"
+        return 1
+    fi
+    
+    return 0
+}
+
 # Function to check if Python script exists
 check_python_script() {
     if [ ! -f "$PYTHON_SCRIPT" ]; then
@@ -44,6 +62,9 @@ check_python_script() {
 # Function to run cleaning script
 run_cleaning() {
     display_header
+    
+    # Get file paths from config
+    get_file_paths || return 1
     
     echo "Configuration:"
     echo "  Input:  $INPUT_FILE"
@@ -90,6 +111,8 @@ run_cleaning() {
 
 # Function to preview cleaned file
 preview_output() {
+    get_file_paths || return 1
+    
     if ! check_file "$OUTPUT_FILE"; then
         echo -e "${RED}[ERROR]${NC} Cleaned file not found. Run cleaning first."
         exit 1
@@ -109,6 +132,8 @@ preview_output() {
 
 # Function to show statistics
 show_stats() {
+    get_file_paths || return 1
+    
     if ! check_file "$OUTPUT_FILE"; then
         echo -e "${RED}[ERROR]${NC} Cleaned file not found. Run cleaning first."
         exit 1
@@ -214,11 +239,14 @@ get_max_product_id() {
 import json
 with open('config.json', 'r') as f:
     config = json.load(f)
-old = config.get('product_id_start', 0)
-config['product_id_start'] = $NEXT_ID
-with open('config.json', 'w') as f:
-    json.dump(config, f, indent=2)
-print(f'✓ Updated: {old} → $NEXT_ID')
+if 'generated_columns' in config and 'product_id' in config['generated_columns']:
+    old = config['generated_columns']['product_id'].get('start', 0)
+    config['generated_columns']['product_id']['start'] = $NEXT_ID
+    with open('config.json', 'w') as f:
+        json.dump(config, f, indent=2)
+    print(f'✓ Updated: {old} → $NEXT_ID')
+else:
+    print('ERROR: generated_columns.product_id not found in config.json')
 "
         echo ""
         echo -e "${GREEN}[SUCCESS]${NC} Config updated! Next cleaning will start at ID $NEXT_ID"
@@ -250,24 +278,25 @@ show_menu() {
 # Function to show usage
 show_usage() {
     echo "========================================"
-    echo "   ALIBABA CSV PIPELINE - USAGE        "
+    echo "    GENERIC CSV PIPELINE - USAGE       "
     echo "========================================"
     echo ""
     echo "INTERACTIVE MODE:"
     echo "  ./run.sh             # Launch interactive menu"
     echo ""
     echo "DIRECT COMMANDS:"
-    echo "  ./run.sh clean       # Run cleaning process"
-    echo "  ./run.sh preview     # Preview cleaned output"
+    echo "  ./run.sh clean       # Process CSV (paths from config.json)"
+    echo "  ./run.sh preview     # Preview output file"
     echo "  ./run.sh stats       # Show statistics"
     echo "  ./run.sh maxid       # Get max product_id and update config"
     echo "  ./run.sh help        # Show this help message"
     echo ""
-    echo "EXAMPLES:"
-    echo "  ./run.sh             # Interactive menu"
-    echo "  ./run.sh clean       # Run cleaning directly"
-    echo "  ./run.sh preview     # Preview output"
-    echo "  ./run.sh stats       # Show statistics"
+    echo "CONFIGURATION:"
+    echo "  Edit config.json to set:"
+    echo "  - Input/output file paths"
+    echo "  - Column mappings"
+    echo "  - Generated columns"
+    echo "  - Filters and options"
     echo ""
 }
 
@@ -276,10 +305,15 @@ interactive_menu() {
     while true; do
         display_header
         
-        # Show current file info
-        echo "Configuration:"
-        echo "  Input:  $INPUT_FILE"
-        echo "  Output: $OUTPUT_FILE"
+        # Get and show current file info from config
+        get_file_paths
+        if [ $? -eq 0 ]; then
+            echo "Configuration (from config.json):"
+            echo "  Input:  $INPUT_FILE"
+            echo "  Output: $OUTPUT_FILE"
+        else
+            echo "Configuration: Check config.json"
+        fi
         echo ""
         
         show_menu

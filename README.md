@@ -1,6 +1,6 @@
-# Alibaba CSV Cleaning Pipeline
+# Generic CSV Pipeline
 
-A Python-based tool that cleans and transforms Alibaba product data CSV files by removing unwanted columns, filtering blank rows, and preparing data for HTML product page generation.
+A flexible, configuration-driven CSV transformation tool that works with any CSV file. Transform, filter, and enhance your data with ease.
 
 ## 🚀 Quick Start
 
@@ -15,135 +15,210 @@ cd csv-pipeline
 ```
 
 ```bash
-bash run.sh
+./run.sh
 ```
 
-The script will automatically clean your CSV file and show you a menu with options.
+Choose option 1 to process your CSV file.
 
 ## Prerequisites
 
 Before you begin, make sure you have:
 
-1. Python 3.6 or higher installed on your computer
-2. Bash shell (comes with Linux/Mac, use Git Bash on Windows)
+1. Python 3.6 or higher installed
+2. Bash shell (Linux/Mac/Git Bash on Windows)
 3. Git for downloading the code
 
 ## What This Tool Does
 
-This tool transforms messy Alibaba product CSV files into clean, organized data:
+This generic CSV processor allows you to:
 
-1. **Removes Unwanted Columns** - Keeps only 4 essential fields (product URL, image URL, price, title)
-2. **Auto-Generates Fields** - Creates product_id, SKU, category, and tags using config.json
-3. **Cleans Data** - Removes rows with missing information automatically
-4. **Interactive Menu** - User-friendly interface to run cleaning, preview results, or view statistics
+1. **Map Columns** - Extract specific columns from any CSV file
+2. **Generate Columns** - Auto-create product IDs, SKUs, UUIDs, timestamps
+3. **Apply Filters** - Remove blank rows, duplicates, and invalid data
+4. **Transform Data** - Process any CSV structure via config.json
 
-## How to Use
+## Setup
 
-### Option 1: Interactive Menu (Recommended for Beginners)
+### Step 1: Place Your CSV File
 
-Run the script without arguments to see a menu:
+```bash
+cp /path/to/your/data.csv input/source.csv
+```
+
+### Step 2: Configure
+
+Edit `config.json` to match your CSV structure:
+
+```json
+{
+  "files": {
+    "input_file": "input/source.csv",
+    "output_file": "output/cleaned.csv"
+  },
+  "columns": {
+    "source_mapping": {
+      "new_column_name": "Original Column Name From CSV"
+    }
+  }
+}
+```
+
+### Step 3: Run
+
+```bash
+./run.sh clean
+```
+
+## Configuration Guide
+
+All settings are in `config.json`. See `config.example.json` for detailed examples.
+
+### File Paths
+
+```json
+"files": {
+  "input_file": "input/your-file.csv",
+  "output_file": "output/result.csv"
+}
+```
+
+### Column Mapping
+
+Map source columns to output columns:
+
+```json
+"columns": {
+  "source_mapping": {
+    "id": "Product ID",
+    "name": "Product Name",
+    "price": "Price (USD)"
+  }
+}
+```
+
+### Generated Columns
+
+Auto-generate new columns:
+
+```json
+"generated_columns": {
+  "row_id": {
+    "type": "sequential",
+    "start": 1
+  },
+  "sku": {
+    "type": "random_hex",
+    "length": 12
+  },
+  "category": {
+    "type": "static",
+    "value": "Electronics"
+  }
+}
+```
+
+**Available types**: `sequential`, `random_hex`, `uuid`, `static`, `timestamp`
+
+### Filters
+
+Control data quality:
+
+```json
+"filters": {
+  "remove_blank_rows": true,
+  "remove_duplicates": false,
+  "duplicate_check_column": "url"
+}
+```
+
+## Usage
+
+### Interactive Menu
 
 ```bash
 ./run.sh
 ```
 
-You'll see these options:
-1. Clean CSV - Processes your alibaba.csv file
-2. Preview cleaned output - Shows first 10 rows of results
-3. Show statistics - Displays file information
-4. Help - Shows usage instructions
-0. Exit - Closes the program
+Menu options:
+1. Clean CSV - Process the file
+2. Preview output - See first 10 rows
+3. Show statistics - View file info
+4. Get max product_id - Sync with existing data
+5. Help - Show usage
 
-### Option 2: Direct Commands (For Quick Tasks)
-
-If you know exactly what you want to do:
+### Direct Commands
 
 ```bash
-./run.sh clean     # Clean the CSV file
-./run.sh preview   # See the results
-./run.sh stats     # View statistics
+./run.sh clean    # Process CSV
+./run.sh preview  # Preview results
+./run.sh stats    # Show statistics
+./run.sh maxid    # Update product_id from products.csv
 ```
-
-## Input and Output Files
-
-1. **Input File**: `alibaba.csv` - Your raw Alibaba product data (30 columns)
-2. **Output File**: `alibaba_cleaned.csv` - Clean data with 8 columns (product_id, product_url, image_url, price, title, sku, category, tags)
-3. **Config File**: `config.json` - Controls product_id start, SKU generation, category, and tags
-4. **Processing Plan**: `plan.txt` - Explains the data transformation strategy
 
 ## Project Structure
 
-1. `clean_alibaba.py` - Python script that does the actual data cleaning
-2. `run.sh` - Bash script with interactive menu and direct command support
-3. `config.json` - Configuration for product_id, SKU, category, and tags (auto-created)
-4. `plan.txt` - 50-line plan explaining the CSV cleaning strategy
-5. `alibaba.csv` - Your source data file (you need to provide this)
-6. `sample_products.csv` - Example of final format for HTML generation (23 columns)
-7. `agent/` - Contains markdown files for various automation agents
+1. `input/` - Place your source CSV files here
+2. `output/` - Processed files are saved here
+3. `process_csv.py` - Main processing script
+4. `config.json` - Your configuration
+5. `config.example.json` - Template with all options
+6. `run.sh` - Interactive menu and commands
 
-## The Cleaning Process
+## Column Types Explained
 
-When you run the cleaner, it does these steps:
+1. **sequential** - Auto-incrementing numbers (1, 2, 3, 4...)
+2. **random_hex** - Random codes (a1b2c3d4e5f6)
+3. **uuid** - UUID format (550e8400-e29b-41d4-a716-446655440000)
+4. **static** - Same value for all rows
+5. **timestamp** - Current date/time
 
-1. Reads config.json for settings (product_id start, category, tags, SKU generation)
-2. Reads your alibaba.csv file (30 columns with Alibaba scraped data)
-3. Extracts these 4 columns and generates 4 new ones:
-   - searchx-product-e-slider__link href → product_url
-   - searchx-product-e-slider__img src → image_url
-   - searchx-product-price-price-main → price
-   - searchx-product-e-title → title
-   - Auto-generates: product_id (sequential), sku (random hex), category, tags
-4. Removes any rows that have empty cells in the extracted columns
-5. Saves the cleaned data to alibaba_cleaned.csv (8 columns total)
-6. Updates config.json with next product_id to prevent duplicates
-7. Shows you a summary with row counts and configuration applied
+## Examples
+
+### Example 1: Product Data
+
+Input CSV has: "Product Link", "Image URL", "Cost", "Product Title"
+
+Config:
+```json
+"source_mapping": {
+  "url": "Product Link",
+  "image": "Image URL",
+  "price": "Cost",
+  "name": "Product Title"
+}
+```
+
+### Example 2: Generate IDs and SKUs
+
+```json
+"generated_columns": {
+  "product_id": {
+    "type": "sequential",
+    "start": 1000
+  },
+  "sku": {
+    "type": "random_hex",
+    "length": 8
+  }
+}
+```
+
+Output: product_id (1000, 1001...), sku (f3a9b2c1, 8d4e5f6a...)
 
 ## Troubleshooting
 
-1. **Problem**: "File 'alibaba.csv' not found" error
-   **Solution**: Make sure you have an alibaba.csv file in the same folder as run.sh
+1. **"Config file not found"**
+   Copy config.example.json to config.json and edit
 
-2. **Problem**: "Python script not found" error
-   **Solution**: Check that clean_alibaba.py exists in the same folder
+2. **"Missing source columns"**
+   Check your CSV headers match the source_mapping values
 
-3. **Problem**: "Permission denied" when running run.sh
-   **Solution**: Make the script executable with this command:
-   ```bash
-   chmod +x run.sh
-   ```
+3. **"No data in output"**
+   Disable remove_blank_rows if your data has some empty fields
 
-4. **Problem**: Script says "Missing required columns"
-   **Solution**: Your CSV file must have these exact column headers:
-   - searchx-product-e-slider__link href
-   - searchx-product-e-slider__img src
-   - searchx-product-price-price-main
-   - searchx-product-e-title
-
-5. **Problem**: Python not installed or wrong version
-   **Solution**: Install Python 3.6+ from python.org, then try again
-
-## Configuration (config.json)
-
-Edit `config.json` to customize output. The script auto-creates this file on first run:
-
-1. **product_id_start** - Starting number for product IDs (auto-updates after each run)
-2. **generate_random_sku** - Set `true` for random hex SKUs, `false` for SKU+product_id format
-3. **category** - Category name applied to all products (e.g., "Camera Accessories")
-4. **tags** - Comma-separated tags (e.g., "camera,alibaba,electronics")
-
-Example: Change category before processing different product types.
-
-## Understanding the Output
-
-After cleaning, you'll see:
-
-1. **Total rows** - How many products were in your original file
-2. **Kept rows** - Products with complete information (these are saved)
-3. **Product ID range** - Starting and ending product_id numbers
-4. **Configuration applied** - Category, tags, and SKU generation method used
-
-The cleaned CSV has 8 columns: product_id, product_url, image_url, price, title, sku, category, tags.
+4. **Wrong file paths**
+   Edit files section in config.json with correct paths
 
 ## License
 
-This project is open source and free to use for cleaning Alibaba product data.
+This project is open source and free to use.
